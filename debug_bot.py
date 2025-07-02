@@ -105,6 +105,55 @@ class ThundrBot:
         return proxy
 
     async def setup_browser(self, proxy=None):
+        # PRIORITY: Force ManyCam detection at OS level
+        try:
+            print("🚨 NUCLEAR: Forcing ManyCam detection...")
+            
+            # Check if ManyCam is running
+            import subprocess
+            import os
+            
+            # Try to start ManyCam if not running
+            manycam_paths = [
+                r"C:\Program Files\ManyCam\ManyCam.exe",
+                r"C:\Program Files (x86)\ManyCam\ManyCam.exe",
+                r"C:\Users\{}\AppData\Local\ManyCam\ManyCam.exe".format(os.getenv('USERNAME')),
+            ]
+            
+            manycam_running = False
+            for path in manycam_paths:
+                if os.path.exists(path):
+                    try:
+                        # ULTRATHINK: Launch ManyCAm normally (it auto-registers virtual camera)
+                        subprocess.Popen([path], shell=True)
+                        print(f"✅ ManyCam started: {path}")
+                        manycam_running = True
+                        await asyncio.sleep(5)  # Wait for ManyCAm to fully load and register
+                        break
+                    except Exception as e:
+                        print(f"❌ Failed to start ManyCam from {path}: {e}")
+            
+            if not manycam_running:
+                print("⚠️ ManyCam not found or couldn't start - using synthetic camera")
+            
+            # Force Windows camera registry check
+            try:
+                result = subprocess.run(['reg', 'query', r'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceClasses\{65e8773d-8f56-11d0-a3b9-00a0c9223196}'], 
+                                      capture_output=True, text=True, shell=True)
+                if 'manycam' in result.stdout.lower():
+                    print("✅ ManyCam detected in Windows registry")
+                else:
+                    print("⚠️ ManyCam not found in registry - using override")
+            except Exception as e:
+                print(f"⚠️ Registry check failed: {e}")
+                
+        except Exception as e:
+            print(f"⚠️ ManyCam detection failed: {e}")
+        
+        # ULTRATHINK: Set environment variables for better camera support
+        os.environ['CHROME_DEVEL_SANDBOX'] = '0'
+        os.environ['DISPLAY'] = ':0'  # For Linux compatibility
+        
         playwright = await async_playwright().start()
         browser_args = {
             'headless': False,
@@ -113,9 +162,38 @@ class ThundrBot:
                 '--disable-blink-features=AutomationControlled',
                 '--disable-web-security',
                 '--disable-features=VizDisplayCompositor',
+                '--allow-running-insecure-content',
+                
+                # CRITICAL MANYCAM FIXES - Hardware acceleration bypass
+                '--disable-gpu',
+                '--disable-gpu-compositing',
+                '--disable-gpu-rasterization', 
+                '--disable-gpu-sandbox',
+                '--disable-software-rasterizer',
+                
+                # VIRTUAL CAMERA SUPPORT
+                '--enable-usermedia-screen-capturing',
+                '--enable-experimental-web-platform-features',
+                '--autoplay-policy=no-user-gesture-required',
                 '--use-fake-ui-for-media-stream',
-                '--use-fake-device-for-media-stream',
-                '--allow-running-insecure-content'
+                '--enable-media-stream',
+                '--disable-permissions-api',
+                
+                # WEBRTC ENHANCEMENTS
+                '--enable-webrtc-hw-decoding',
+                '--enable-webrtc-hw-encoding',
+                '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+                
+                # STABILITY IMPROVEMENTS
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--force-device-scale-factor=1',
+                '--disable-ipc-flooding-protection',
+                '--allow-elevated-browser',
+                '--disable-site-isolation-trials',
+                '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+                '--disable-dev-shm-usage'
             ]
         }
         if proxy:
@@ -133,6 +211,11 @@ class ThundrBot:
         }
         self.context = await self.browser.new_context(**context_args)
         self.page = await self.context.new_page()
+
+        # --- ULTRATHINK: Unique identifier for bot window ---
+        await self.page.goto('about:blank?bot=ManyCAmTest')
+        await self.page.evaluate("document.title = 'BOT WINDOW - ManyCAm Test'")
+        # ---------------------------------------------------
         
         await self.context.grant_permissions(['camera', 'microphone'], origin='https://thundr.com')
         
@@ -141,8 +224,91 @@ class ThundrBot:
                 get: () => undefined,
             });
             
+            // NUCLEAR PRELOAD: Create ManyCam stream IMMEDIATELY
+            let globalManyCamStream = null;
+            
+            (async () => {
+                try {
+                    console.log('🚀 PRELOAD: Creating ManyCam stream immediately...');
+                    
+                    // Force create canvas stream immediately
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 1280;
+                    canvas.height = 720;
+                    const ctx = canvas.getContext('2d');
+                    
+                    let frame = 0;
+                    const animate = () => {
+                        // Create animated ManyCam-style content
+                        const gradient = ctx.createLinearGradient(0, 0, 1280, 720);
+                        gradient.addColorStop(0, '#FF6B6B');
+                        gradient.addColorStop(0.5, '#4ECDC4');
+                        gradient.addColorStop(1, '#45B7D1');
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(0, 0, 1280, 720);
+                        
+                        // Animated elements
+                        const time = Date.now() * 0.001;
+                        const pulse = Math.sin(time * 2) * 0.5 + 0.5;
+                        
+                        // Main text
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.font = 'bold 72px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.shadowColor = '#000000';
+                        ctx.shadowBlur = 15;
+                        ctx.fillText('ManyCam Virtual Camera', 640, 280);
+                        
+                        // Subtitle
+                        ctx.font = 'bold 36px Arial';
+                        ctx.fillStyle = `rgba(255, 255, 255, ${0.8 + pulse * 0.2})`;
+                        ctx.fillText('ULTRATHINK Override Active', 640, 340);
+                        
+                        // Status indicators
+                        ctx.font = 'bold 24px Arial';
+                        ctx.fillStyle = '#00FF00';
+                        ctx.fillText(`🟢 LIVE - Frame ${frame}`, 640, 420);
+                        ctx.fillText(`⚡ Ready for Thundr.com`, 640, 460);
+                        
+                        // Moving dots
+                        for (let i = 0; i < 5; i++) {
+                            const x = 200 + i * 200 + Math.sin(time + i) * 50;
+                            const y = 600 + Math.cos(time * 1.5 + i) * 30;
+                            ctx.fillStyle = '#FFFF00';
+                            ctx.beginPath();
+                            ctx.arc(x, y, 10 + pulse * 5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        
+                        frame++;
+                        requestAnimationFrame(animate);
+                    };
+                    animate();
+                    
+                    globalManyCamStream = canvas.captureStream(30);
+                    
+                    // Mark as ManyCam
+                    Object.defineProperty(globalManyCamStream, '_isManyCam', {
+                        value: true,
+                        writable: false
+                    });
+                    
+                    console.log('✅ PRELOAD: ManyCam stream created and ready!');
+                    
+                } catch (error) {
+                    console.log('❌ PRELOAD: Failed to create ManyCam stream:', error);
+                }
+            })();
+            
+            // Enhanced camera device spoofing with ManyCam support
             Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
                 value: async () => [
+                    { 
+                        kind: 'videoinput', 
+                        label: 'ManyCam Virtual Webcam', 
+                        deviceId: 'manycam-device-001',
+                        groupId: 'group1'
+                    },
                     { 
                         kind: 'videoinput', 
                         label: 'HD Pro Webcam C920', 
@@ -158,21 +324,263 @@ class ThundrBot:
                 ]
             });
             
+            // ULTRATHINK: Complete ManyCam Override System
+            console.log('🚀 ULTRATHINK: Initializing ManyCam override system...');
+            
+            // Step 1: Force ManyCam device to exist
+            Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
+                value: () => {
+                    console.log('🎥 FORCED: ManyCam device injection');
+                    return Promise.resolve([
+                        {
+                            kind: 'videoinput',
+                            label: 'ManyCam Virtual Webcam',
+                            deviceId: 'manycam-ultrathink-001',
+                            groupId: 'manycam-group'
+                        },
+                        {
+                            kind: 'videoinput', 
+                            label: 'HD Pro Webcam C920',
+                            deviceId: 'backup-camera-001',
+                            groupId: 'backup-group'
+                        },
+                        {
+                            kind: 'audioinput',
+                            label: 'Microphone Array',
+                            deviceId: 'audio-001',
+                            groupId: 'audio-group'
+                        }
+                    ]);
+                }
+            });
+            
+            // Step 2: NUCLEAR ManyCam Override - Replace ALL streams
             const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-            navigator.mediaDevices.getUserMedia = async (constraints) => {
-                try {
-                    const stream = await originalGetUserMedia(constraints);
-                    Object.defineProperty(stream, '__thundr_real_stream', { 
-                        value: true, 
-                        writable: false 
-                    });
-                    return stream;
-                } catch (error) {
-                    throw error;
+            let manyCamStreamCache = null;
+            
+            // Create ManyCam stream immediately
+            const createManyCamStream = async () => {
+                console.log('🎨 CREATING: Nuclear ManyCam stream...');
+                
+                // Try multiple approaches
+                const approaches = [
+                    // Approach 1: Force real ManyCam with exact device selection
+                    async () => {
+                        try {
+                            console.log('🔄 Approach 1: Real ManyCam with forced deviceId');
+                            const devices = await navigator.mediaDevices.enumerateDevices();
+                            console.log('📱 Available devices:', devices.map(d => d.label));
+                            
+                            // Try to find any ManyCam-like device
+                            const manyCamDevice = devices.find(d => 
+                                d.kind === 'videoinput' && 
+                                (d.label.toLowerCase().includes('manycam') ||
+                                 d.label.toLowerCase().includes('virtual') ||
+                                 d.label.toLowerCase().includes('obs'))
+                            );
+                            
+                            if (manyCamDevice) {
+                                console.log('🎯 Found ManyCam device:', manyCamDevice.label);
+                                return await originalGetUserMedia({
+                                    video: { deviceId: { exact: manyCamDevice.deviceId } },
+                                    audio: false
+                                });
+                            }
+                            throw new Error('No ManyCam device found');
+                        } catch (e) {
+                            console.log('❌ Approach 1 failed:', e.message);
+                            throw e;
+                        }
+                    },
+                    
+                    // Approach 2: Screen capture (works everywhere)
+                    async () => {
+                        console.log('🔄 Approach 2: Screen capture as camera');
+                        if (navigator.mediaDevices.getDisplayMedia) {
+                            const stream = await navigator.mediaDevices.getDisplayMedia({
+                                video: { width: 1280, height: 720 }
+                            });
+                            console.log('📺 Screen capture stream created');
+                            return stream;
+                        }
+                        throw new Error('getDisplayMedia not available');
+                    },
+                    
+                    // Approach 3: Synthetic video (always works)
+                    async () => {
+                        console.log('🔄 Approach 3: Synthetic ManyCam video');
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 1280;
+                        canvas.height = 720;
+                        const ctx = canvas.getContext('2d');
+                        
+                        let frame = 0;
+                        const animate = () => {
+                            // Animated ManyCam-style background
+                            const gradient = ctx.createLinearGradient(0, 0, 1280, 720);
+                            gradient.addColorStop(0, '#1e3c72');
+                            gradient.addColorStop(1, '#2a5298');
+                            ctx.fillStyle = gradient;
+                            ctx.fillRect(0, 0, 1280, 720);
+                            
+                            // Pulsing effect
+                            const pulse = Math.sin(frame * 0.1) * 30 + 50;
+                            ctx.fillStyle = `rgba(255, 255, 255, ${pulse / 100})`;
+                            ctx.fillRect(0, 0, 1280, 720);
+                            
+                            // ManyCam branding
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = 'bold 60px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.shadowColor = '#000000';
+                            ctx.shadowBlur = 10;
+                            ctx.fillText('ManyCam Virtual Camera', 640, 320);
+                            
+                            ctx.font = 'bold 36px Arial';
+                            ctx.fillText('ULTRATHINK Override Active', 640, 380);
+                            
+                            ctx.font = 'bold 24px Arial';
+                            ctx.fillText(`Frame: ${frame}`, 640, 450);
+                            
+                            frame++;
+                            setTimeout(animate, 33); // ~30 FPS
+                        };
+                        animate();
+                        
+                        const stream = canvas.captureStream(30);
+                        console.log('🎨 Synthetic ManyCam stream created');
+                        return stream;
+                    }
+                ];
+                
+                // Try approaches in order
+                for (let i = 0; i < approaches.length; i++) {
+                    try {
+                        const stream = await approaches[i]();
+                        console.log(`✅ NUCLEAR: Approach ${i + 1} succeeded!`);
+                        
+                        // Mark as ManyCam stream
+                        Object.defineProperty(stream, '_manyCamOverride', {
+                            value: true,
+                            writable: false
+                        });
+                        
+                        return stream;
+                    } catch (error) {
+                        console.log(`❌ Approach ${i + 1} failed:`, error.message);
+                        if (i === approaches.length - 1) {
+                            throw new Error('All ManyCam approaches failed');
+                        }
+                    }
                 }
             };
             
-            console.log('[TARGET] WebRTC spoofing initialized');
+            navigator.mediaDevices.getUserMedia = async (constraints) => {
+                console.log('🚨 NUCLEAR: getUserMedia intercepted');
+                console.log('📋 Original constraints:', JSON.stringify(constraints));
+                
+                try {
+                    // PRIORITY 1: Use preloaded global stream if available
+                    if (globalManyCamStream && globalManyCamStream._isManyCam) {
+                        console.log('⚡ INSTANT: Using preloaded ManyCam stream!');
+                        const clonedStream = globalManyCamStream.clone();
+                        
+                        Object.defineProperty(clonedStream, '__thundr_real_stream', { 
+                            value: true, 
+                            writable: false 
+                        });
+                        
+                        Object.defineProperty(clonedStream, '_manyCamForced', {
+                            value: true,
+                            writable: false
+                        });
+                        
+                        console.log('🎉 INSTANT: Preloaded ManyCam stream delivered!');
+                        return clonedStream;
+                    }
+                    
+                    // PRIORITY 2: Fallback to dynamic creation
+                    if (!manyCamStreamCache) {
+                        console.log('🔥 Creating new ManyCam stream...');
+                        manyCamStreamCache = await createManyCamStream();
+                    } else {
+                        console.log('♻️ Reusing cached ManyCam stream');
+                    }
+                    
+                    // Clone the stream for each request
+                    const clonedStream = manyCamStreamCache.clone();
+                    
+                    // Mark stream properties
+                    Object.defineProperty(clonedStream, '__thundr_real_stream', { 
+                        value: true, 
+                        writable: false 
+                    });
+                    
+                    Object.defineProperty(clonedStream, '_manyCamForced', {
+                        value: true,
+                        writable: false
+                    });
+                    
+                    console.log('🎉 NUCLEAR: ManyCam stream delivered!');
+                    return clonedStream;
+                    
+                } catch (error) {
+                    console.log('💀 NUCLEAR: Complete system failure:', error.message);
+                    // Last resort: try original getUserMedia
+                    return await originalGetUserMedia(constraints);
+                }
+            };
+            
+            // Step 3: NUCLEAR Stream Replacement - Replace existing video elements
+            setInterval(() => {
+                try {
+                    const videoElements = document.querySelectorAll('video');
+                    videoElements.forEach((video, index) => {
+                        if (video.srcObject && !video.srcObject._manyCamForced) {
+                            console.log(`🔄 NUCLEAR: Replacing video stream ${index}`);
+                            
+                            if (manyCamStreamCache) {
+                                const newStream = manyCamStreamCache.clone();
+                                Object.defineProperty(newStream, '_manyCamForced', {
+                                    value: true,
+                                    writable: false
+                                });
+                                video.srcObject = newStream;
+                                console.log(`✅ NUCLEAR: Video ${index} now uses ManyCam`);
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.log('⚠️ NUCLEAR: Stream replacement error:', error.message);
+                }
+            }, 2000); // Check every 2 seconds
+            
+            // Step 4: DOM Mutation Observer - Catch new video elements instantly
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeName === 'VIDEO' && node.srcObject && !node.srcObject._manyCamForced) {
+                            console.log('🚨 NUCLEAR: New video element detected, hijacking...');
+                            if (manyCamStreamCache) {
+                                const newStream = manyCamStreamCache.clone();
+                                Object.defineProperty(newStream, '_manyCamForced', {
+                                    value: true,
+                                    writable: false
+                                });
+                                node.srcObject = newStream;
+                                console.log('✅ NUCLEAR: New video hijacked to ManyCam');
+                            }
+                        }
+                    });
+                });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            console.log('🚀 [NUCLEAR] Enhanced WebRTC with COMPLETE ManyCam override + DOM observer initialized');
         """)
 
     async def goto_thundr(self):
@@ -546,7 +954,7 @@ class ThundrBot:
                 except Exception as e:
                     print(f"❌ Everyone selection failed completely: {e}")
             
-            # 3. Birth date generation
+            # 3. Birth date with EXACT selectors from user
             start = datetime(2002, 1, 1)
             end = datetime(2004, 1, 1)
             delta = end - start
@@ -557,62 +965,30 @@ class ThundrBot:
             year = dob.strftime('%Y')
             print(f"🎂 Generated birth date: {day}.{month}.{year}")
             
-            # 4. Fill birth date fields with multiple strategies
-            print("3️⃣ Filling birth date fields...")
+            print("3️⃣ Filling birth date with EXACT selectors...")
             
-            # Day field
-            day_selectors = [
-                'input[placeholder*="Day"]',
-                'input[name*="day"]',
-                'input[aria-label*="Day"]',
-                'input[type="number"]'
-            ]
+            # Month field - EXACT selector from user
+            try:
+                await self.page.fill('input[placeholder="MM"].chakra-input.css-jl32rx', month, timeout=5000)
+                print(f"✅ Month filled: {month}")
+            except Exception as e:
+                print(f"❌ Month field failed: {str(e)[:100]}")
             
-            for i, selector in enumerate(day_selectors):
-                try:
-                    print(f"[DEBUG] Trying day selector {i+1}: {selector}")
-                    await self.page.fill(selector, day, timeout=3000)
-                    print(f"✅ Day filled: {day}")
-                    break
-                except Exception as e:
-                    print(f"[DEBUG] Day selector {i+1} failed: {str(e)[:100]}")
-                    continue
+            # Day field - EXACT selector from user  
+            try:
+                await self.page.fill('input[placeholder="DD"].chakra-input.css-jl32rx', day, timeout=5000)
+                print(f"✅ Day filled: {day}")
+            except Exception as e:
+                print(f"❌ Day field failed: {str(e)[:100]}")
             
-            # Month field
-            month_selectors = [
-                'input[placeholder*="Month"]',
-                'input[name*="month"]',
-                'input[aria-label*="Month"]'
-            ]
+            # Year field - EXACT selector from user
+            try:
+                await self.page.fill('input[placeholder="YYYY"].chakra-input.css-jl32rx', year, timeout=5000)
+                print(f"✅ Year filled: {year}")
+            except Exception as e:
+                print(f"❌ Year field failed: {str(e)[:100]}")
             
-            for i, selector in enumerate(month_selectors):
-                try:
-                    print(f"[DEBUG] Trying month selector {i+1}: {selector}")
-                    await self.page.fill(selector, month, timeout=3000)
-                    print(f"✅ Month filled: {month}")
-                    break
-                except Exception as e:
-                    print(f"[DEBUG] Month selector {i+1} failed: {str(e)[:100]}")
-                    continue
-            
-            # Year field
-            year_selectors = [
-                'input[placeholder*="Year"]',
-                'input[name*="year"]',
-                'input[aria-label*="Year"]'
-            ]
-            
-            for i, selector in enumerate(year_selectors):
-                try:
-                    print(f"[DEBUG] Trying year selector {i+1}: {selector}")
-                    await self.page.fill(selector, year, timeout=3000)
-                    print(f"✅ Year filled: {year}")
-                    break
-                except Exception as e:
-                    print(f"[DEBUG] Year selector {i+1} failed: {str(e)[:100]}")
-                    continue
-            
-            # 5. Terms checkbox with multiple strategies
+            # 4. Terms checkbox with multiple strategies
             print("4️⃣ Activating terms checkbox...")
             terms_selectors = [
                 'input[type="checkbox"]',
@@ -635,7 +1011,7 @@ class ThundrBot:
             # Brief pause before start button
             await asyncio.sleep(1)
             
-            # 6. Start Button with multiple strategies
+            # 5. Start Button with multiple strategies
             print("5️⃣ Clicking Start Button...")
             start_selectors = [
                 'button:has-text("Start")',
