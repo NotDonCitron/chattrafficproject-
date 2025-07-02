@@ -28,7 +28,10 @@ data/
 Thumbs.db
 
 # IDE
-.vscode/
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -47,4 +50,84 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
-.cache/ 
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+
+
+# Automation artifacts
+screenshots/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.webm
+
+# Cache and temporary files
+selector_cache.json
+thundr_interests_cache.json
+*.cache
+*.tmp
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Browser automation
+playwright-browsers/
+.playwright/
+
+# Data files (may contain sensitive info)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration with sensitive data
+config/local.js
+config/production.js
+.env.local
+.env.production
+
+# Windows
+*.bat
+monitor.bat 

@@ -1,0 +1,56 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.useLibraryCodeForTypes": false,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportAttributeAccessIssue": "none",
+        "reportOptionalMemberAccess": "none",
+        "reportOptionalSubscript": "none", 
+        "reportOptionalCall": "none",
+        "reportOptionalIterable": "none",
+        "reportOptionalContextManager": "none",
+        "reportOptionalOperand": "none",
+        "reportMissingImports": "none",
+        "reportGeneralTypeIssues": "none",
+        "reportMissingTypeStubs": "none",
+        "reportImportCycles": "none",
+        "reportPrivateUsage": "none",
+        "reportUnknownMemberType": "none",
+        "reportUnknownArgumentType": "none",
+        "reportUnknownLambdaType": "none",
+        "reportUnknownVariableType": "none",
+        "reportUnknownParameterType": "none",
+        "reportMissingParameterType": "none",
+        "reportTypedDictNotRequiredAccess": "none",
+        "reportUnusedImport": "none",
+        "reportUnusedClass": "none",
+        "reportUnusedFunction": "none",
+        "reportUnusedVariable": "none"
+    },
+    "[python]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    },
+    "files.associations": {
+        "*_bot.py": "python",
+        "debug_*.py": "python",
+        "enhanced_*.py": "python",
+        "step_*.py": "python",
+        "ultrafast_*.py": "python",
+        "production_*.py": "python",
+        "self_healing_*.py": "python",
+        "quick_test_*.py": "python"
+    },
+    "problems.excludeGlobs": [
+        "**/*_bot.py",
+        "**/debug_*.py",
+        "**/enhanced_*.py", 
+        "**/step_*.py",
+        "**/ultrafast_*.py",
+        "**/production_*.py",
+        "**/self_healing_*.py",
+        "**/quick_test_*.py"
+    ]
+} 

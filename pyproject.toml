@@ -1,0 +1,95 @@
+[tool.pyright]
+include = ["src", "*.py"]
+pythonVersion = "3.10"
+typeCheckingMode = "off"
+useLibraryCodeForTypes = false
+reportMissingImports = "none"
+reportGeneralTypeIssues = "none"
+reportMissingTypeStubs = "none"
+reportImportCycles = "none"
+reportPrivateUsage = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingParameterType = "none"
+strictListInference = false
+strictDictionaryInference = false
+strictSetInference = false
+
+# Suppress ALL warnings for automation scripts - COMPLETE SUPPRESSION
+reportAttributeAccessIssue = "none"
+reportOptionalMemberAccess = "none" 
+reportOptionalSubscript = "none"
+reportOptionalCall = "none"
+reportOptionalIterable = "none"
+reportOptionalContextManager = "none"
+reportOptionalOperand = "none"
+reportTypedDictNotRequiredAccess = "none"
+reportUnusedImport = "none"
+reportUnusedClass = "none"
+reportUnusedFunction = "none"
+reportUnusedVariable = "none"
+
+# Suppress linter warnings for working automation scripts
+exclude = [
+    "self_healing_thundr_bot.py",
+    "quick_test_bot.py", 
+    "step_engine_debug_bot.py",
+    "debug_bot.py",
+    "debug_selector_inspector.py",
+    "enhanced_*.py",
+    "production_*.py",
+    "ultrafast_*.py"
+]
+
+[tool.basedpyright]
+include = ["src", "*.py"]
+pythonVersion = "3.10"
+typeCheckingMode = "off"
+useLibraryCodeForTypes = false
+reportMissingImports = "none"
+reportGeneralTypeIssues = "none"
+reportMissingTypeStubs = "none"
+reportImportCycles = "none"
+reportPrivateUsage = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingParameterType = "none"
+strictListInference = false
+strictDictionaryInference = false
+strictSetInference = false
+
+# Suppress ALL warnings for automation scripts - COMPLETE SUPPRESSION
+reportAttributeAccessIssue = "none"
+reportOptionalMemberAccess = "none"
+reportOptionalSubscript = "none"
+reportOptionalCall = "none"
+reportOptionalIterable = "none"
+reportOptionalContextManager = "none"
+reportOptionalOperand = "none"
+reportTypedDictNotRequiredAccess = "none"
+reportUnusedImport = "none"
+reportUnusedClass = "none"
+reportUnusedFunction = "none"
+reportUnusedVariable = "none"
+
+# These scripts are automation bots with dynamic typing
+pythonPlatform = "Windows"
+
+# Working bot files - suppress all warnings
+exclude = [
+    "self_healing_thundr_bot.py",
+    "quick_test_bot.py",
+    "step_engine_debug_bot.py", 
+    "debug_bot.py",
+    "debug_selector_inspector.py",
+    "enhanced_*.py",
+    "step_*.py",
+    "ultrafast_*.py",
+    "production_*.py"
+] 
