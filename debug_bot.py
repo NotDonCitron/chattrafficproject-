@@ -79,14 +79,18 @@ class ThundrBot:
             
             self.all_available_interests = self.load_interests_cache()
             
-            if self.all_available_interests:
-                max_interests = min(10, len(self.all_available_interests))  # Reduced for stability
-                num_interests = random.randint(3, max_interests)
-                self.session_interests = random.sample(self.all_available_interests, num_interests)
+            if self.all_available_interests and len(self.all_available_interests) >= 33:
+                self.session_interests = random.sample(self.all_available_interests, 33)
+                print(f"[OK] Selected 33 interests from {len(self.all_available_interests)} available")
+            elif self.all_available_interests:
+                # Repeat available interests to reach 33
+                repeat_count = (33 // len(self.all_available_interests)) + 1
+                self.session_interests = (self.all_available_interests * repeat_count)[:33]
+                print(f"[REPEAT] Repeated {len(self.all_available_interests)} interests {repeat_count} times to reach 33")
             else:
-                fallback_interests = ["Gaming", "Music", "Movies", "Sports", "Technology"]
-                num_interests = random.randint(3, 5)
-                self.session_interests = random.sample(fallback_interests, num_interests)
+                fallback_interests = ["Gaming", "Music", "Movies", "Sports", "Technology", "Art", "Travel", "Food", "Photography", "Dancing"]
+                self.session_interests = (fallback_interests * 4)[:33]  # 10 * 4 = 40, take first 33
+                print(f"[FALLBACK] Using emergency fallback interests, repeated to reach 33")
             
             self.session_initialized = True
             print(f"[TARGET] Session-Daten initialisiert:")
@@ -189,13 +193,56 @@ class ThundrBot:
         try:
             print("[LIVE] Live Interest Scraping from Dropdown...")
             
-            # 1. Click interest input to open dropdown
-            await self.page.click('input[placeholder*="interest"]')
-            print("[OK] Interest input clicked")
+            # 1. Click interest input to open dropdown - try multiple selectors
+            input_selectors = [
+                'input[placeholder="Type your interests..."]',  # Exact from inspector
+                'input[placeholder*="interest"]',
+                'input[placeholder*="Type"]',
+                '.interest-input',
+                '[data-testid="interest-input"]'
+            ]
             
-            # 2. Wait for dropdown options to appear
-            await self.page.wait_for_selector('li[role="option"]', timeout=10000)
-            await asyncio.sleep(1)  # Brief wait for all options to load
+            input_clicked = False
+            for selector in input_selectors:
+                try:
+                    await self.page.click(selector, timeout=3000)
+                    print(f"[OK] Interest input clicked: {selector}")
+                    input_clicked = True
+                    break
+                except Exception as e:
+                    print(f"[DEBUG] Input selector failed: {selector}")
+                    continue
+            
+            if not input_clicked:
+                print("[ERROR] Could not find interest input field!")
+                return await self.fallback_interest_selection()
+            
+            # 2. Wait for dropdown options to appear with multiple selectors
+            dropdown_selectors = [
+                'li[role="option"]',
+                '.dropdown-option',
+                '[data-option]',
+                'div[role="option"]',
+                '.interest-option'
+            ]
+            
+            dropdown_found = False
+            for selector in dropdown_selectors:
+                try:
+                    await self.page.wait_for_selector(selector, timeout=3000)
+                    print(f"[OK] Dropdown found: {selector}")
+                    dropdown_found = True
+                    await asyncio.sleep(1)  # Brief wait for all options to load
+                    break
+                except Exception as e:
+                    print(f"[DEBUG] Dropdown selector failed: {selector}")
+                    continue
+            
+            if not dropdown_found:
+                print("[ERROR] No dropdown appeared after clicking input!")
+                # Take screenshot for debugging
+                await self.page.screenshot(path=f"debug_no_dropdown_{int(datetime.now().timestamp())}.png")
+                return await self.fallback_interest_selection()
             
             # 3. Get ALL current interests from live dropdown
             interest_elements = await self.page.query_selector_all('li[role="option"]')
@@ -215,12 +262,16 @@ class ThundrBot:
             
             print(f"[LIVE] Found {len(all_current_interests)} live interests")
             
-            # 4. Select random interests (up to 10 for speed)
+            # 4. Select exactly 33 interests
             if all_current_interests:
-                max_select = min(10, len(all_current_interests))
+                max_select = min(33, len(all_current_interests))
                 selected_interests = random.sample(all_current_interests, max_select)
                 
+                print(f"[TARGET] Attempting to select {max_select} interests from {len(all_current_interests)} available")
+                print(f"[INTERESTS] Will try: {', '.join(selected_interests[:10])}{'...' if len(selected_interests) > 10 else ''}")
+                
                 selected_count = 0
+                failed_count = 0
                 for interest in selected_interests:
                     try:
                         # Use exact text match from live dropdown
@@ -228,13 +279,26 @@ class ThundrBot:
                         await self.page.click(selector)
                         selected_count += 1
                         print(f"[OK] {interest} selected ({selected_count})")
-                        await asyncio.sleep(0.2)  # Minimal delay
+                        await asyncio.sleep(0.1)  # Faster for 33 selections
                         
                     except Exception as e:
-                        print(f"[WARNING] Failed to select {interest}: {e}")
+                        failed_count += 1
+                        print(f"[WARNING] Failed to select {interest}: {str(e)[:50]}...")
                         continue
                 
-                print(f"[LIVE] Interest selection completed: {selected_count}/{max_select} interests selected")
+                print(f"[LIVE] Interest selection completed: {selected_count}/{max_select} interests selected (target: 33)")
+                print(f"[STATS] Success: {selected_count}, Failed: {failed_count}, Total attempted: {len(selected_interests)}")
+                
+                # Validation check - ensure we have enough interests
+                if selected_count < 15:  # Minimum threshold 
+                    print(f"[ERROR] Only {selected_count} interests selected! This is too few. Exiting session.")
+                    return False
+                elif selected_count < 33:
+                    print(f"[WARNING] Only {selected_count}/33 interests selected. Site may have limits.")
+                else:
+                    print(f"[SUCCESS] {selected_count} interests selected - target achieved!")
+                
+                print(f"[ENHANCED] Interest Selection abgeschlossen: {selected_count} Interests")
                 return True
             else:
                 print("[WARNING] No interests found in dropdown - continuing anyway")
@@ -247,39 +311,67 @@ class ThundrBot:
             return await self.fallback_interest_selection()
 
     async def fallback_interest_selection(self):
-        """Fallback method if live scraping fails"""
+        """Fallback method if live scraping fails - try typing interests"""
         try:
-            interests_to_try = ["Gaming", "Music", "Movies", "Sports", "Technology", "Art", "Food"]
+            print("[FALLBACK] Trying typed interest selection...")
+            interests_to_try = self.session_interests[:15]  # Try first 15 interests
             selected_count = 0
+            
+            # Find the interest input field
+            input_selectors = [
+                'input[placeholder="Type your interests..."]',
+                'input[placeholder*="interest"]',
+                'input[placeholder*="Type"]'
+            ]
+            
+            input_field = None
+            for selector in input_selectors:
+                try:
+                    input_field = await self.page.query_selector(selector)
+                    if input_field and await input_field.is_visible():
+                        print(f"[FALLBACK] Found input field: {selector}")
+                        break
+                except:
+                    continue
+            
+            if not input_field:
+                print("[ERROR] No input field found for fallback!")
+                return False
             
             for interest in interests_to_try:
                 try:
-                    selectors = [
-                        f'[role="option"]:has-text("{interest}")',
-                        f'li:has-text("{interest}")',
-                        f'button:has-text("{interest}")'
-                    ]
+                    # Clear and type the interest
+                    await input_field.fill("")
+                    await asyncio.sleep(0.2)
+                    await input_field.fill(interest)
+                    await asyncio.sleep(0.5)
                     
-                    for selector in selectors:
-                        try:
-                            element = await self.page.query_selector(selector)
-                            if element and await element.is_visible():
-                                await element.click()
-                                selected_count += 1
-                                print(f"[FALLBACK] {interest} selected ({selected_count})")
-                                await asyncio.sleep(0.3)
-                                break
-                        except:
-                            continue
-                            
-                    if selected_count >= 3:  # Stop after 3 for speed
+                    # Try pressing Enter or Tab to select
+                    await input_field.press('Enter')
+                    await asyncio.sleep(0.3)
+                    
+                    selected_count += 1
+                    print(f"[FALLBACK] {interest} typed and selected ({selected_count})")
+                    
+                    if selected_count >= 15:  # Stop after 15 typed interests
                         break
                         
                 except Exception as e:
-                    print(f"[WARNING] Fallback failed for {interest}: {e}")
+                    print(f"[WARNING] Fallback failed for {interest}: {str(e)[:50]}...")
                     continue
             
-            print(f"[FALLBACK] Selected {selected_count} interests")
+            print(f"[FALLBACK] Selected {selected_count} interests (target: 33)")
+            
+            # Validation check for fallback too
+            if selected_count < 5:  # Lower threshold for typed fallback
+                print(f"[ERROR] Fallback only selected {selected_count} interests! This is too few. Exiting session.")
+                return False
+            elif selected_count >= 10:
+                print(f"[SUCCESS] Fallback achieved {selected_count} interests - good enough to continue!")
+            else:
+                print(f"[WARNING] Fallback selected {selected_count} interests. Continuing anyway.")
+            
+            print(f"[ENHANCED] Interest Selection abgeschlossen: {selected_count} Interests")
             return True
             
         except Exception as e:
@@ -541,85 +633,6 @@ class ThundrBot:
                     continue
             
             # Brief pause before start button
-            await asyncio.sleep(1)
-            
-            # 3. Birth date with enhanced selectors
-            print(f"Fülle Geburtsdatum aus: {self.session_birth_date['day']}.{self.session_birth_date['month']}.{self.session_birth_date['year']}")
-            
-            birth_filled = False
-            try:
-                # Try multiple birth date selector strategies
-                day_selectors = ['input[placeholder="DD"]', 'input[name="day"]', 'input[placeholder*="day"]']
-                month_selectors = ['input[placeholder="MM"]', 'input[name="month"]', 'input[placeholder*="month"]']
-                year_selectors = ['input[placeholder="YYYY"]', 'input[name="year"]', 'input[placeholder*="year"]']
-                
-                day_input = None
-                month_input = None
-                year_input = None
-                
-                for selector in day_selectors:
-                    try:
-                        day_input = await self.page.query_selector(selector)
-                        if day_input and await day_input.is_visible():
-                            break
-                    except:
-                        continue
-                
-                for selector in month_selectors:
-                    try:
-                        month_input = await self.page.query_selector(selector)
-                        if month_input and await month_input.is_visible():
-                            break
-                    except:
-                        continue
-                
-                for selector in year_selectors:
-                    try:
-                        year_input = await self.page.query_selector(selector)
-                        if year_input and await year_input.is_visible():
-                            break
-                    except:
-                        continue
-                
-                if day_input and month_input and year_input:
-                    await day_input.fill(self.session_birth_date['day'])
-                    await month_input.fill(self.session_birth_date['month'])
-                    await year_input.fill(self.session_birth_date['year'])
-                    print("[OK] Geburtsdatum ausgefüllt")
-                    birth_filled = True
-                else:
-                    print("[WARNING] Nicht alle Geburtsdatum-Felder gefunden")
-            except Exception as e:
-                print(f"[WARNING] Fehler beim Geburtsdatum: {e}")
-            
-            await asyncio.sleep(1)
-            
-            # 4. Terms checkbox with multiple strategies
-            print("Aktiviere Terms Checkbox...")
-            terms_clicked = False
-            terms_selectors = [
-                'input[type="checkbox"]',
-                'svg[data-state="unchecked"]',
-                '.checkbox',
-                '[role="checkbox"]',
-                'label:has-text("terms"):visible',
-                'label:has-text("agree"):visible'
-            ]
-            
-            for selector in terms_selectors:
-                try:
-                    checkbox = await self.page.query_selector(selector)
-                    if checkbox and await checkbox.is_visible():
-                        await checkbox.click()
-                        print("[OK] Terms Checkbox aktiviert")
-                        terms_clicked = True
-                        break
-                except:
-                    continue
-            
-            if not terms_clicked:
-                print("[WARNING] Terms Checkbox nicht gefunden")
-            
             await asyncio.sleep(1)
             
             # 6. Start Button with multiple strategies
@@ -918,8 +931,9 @@ class ThundrBot:
             print("Browser bereinigt.")
 
 async def main():
-    print('[DEBUG] Starte Enhanced Thundr Bot - DEBUG SINGLE CLIENT VERSION...')
-    print('[DEBUG] This will run only 1 session with detailed step analysis')
+    print('🚀 === ULTRA-FAST THUNDR BOT - SPEED OPTIMIZED ===')
+    print('⚡ Maximum speed, minimal delays, comprehensive logging')
+    print('🔄 Auto-restart on timeouts, 33 interests per session')
     
     proxies = []
     print(f'Proxy-Liste: {len(proxies)} Proxys (Debug-Modus ohne Proxy)')
@@ -929,7 +943,7 @@ async def main():
     ]
     
     bot = ThundrBot(proxies=proxies, messages=messages)
-    max_sessions = 1  # Only 1 session for debugging
+    max_sessions = 100  # Continuous ultra-fast sessions
     session_count = 0
     
     # Create logs directory for debug reports
