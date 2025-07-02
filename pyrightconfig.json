@@ -9,6 +9,7 @@
         "quick_test_bot.py",
         "step_engine_debug_bot.py",
         "debug_selector_inspector.py",
+        "optimized_thundr_bot.py",
         "enhanced_*.py",
         "step_*.py",
         "ultrafast_*.py",

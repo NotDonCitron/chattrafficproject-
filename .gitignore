@@ -103,6 +103,10 @@ thundr_interests_cache.json
 *.cache
 *.tmp
 
+# Logs
+logs/
+*.log
+
 # OS
 .DS_Store
 .DS_Store?
