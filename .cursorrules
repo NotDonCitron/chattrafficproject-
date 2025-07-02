@@ -1,0 +1,99 @@
+# Web Video Chat & Chatroom Automation Platform
+
+## Project Overview
+You are helping build a scalable web automation platform specifically for video chats and chatrooms. The goal is to create bots that can:
+- Join video chats and chatrooms automatically
+- Interact with users via text/voice
+- Extract data, monitor conversations
+- Handle multiple accounts and proxies
+- Scale across multiple containers/servers
+
+## Tech Stack
+- **Language**: Node.js (primary), Python (secondary)
+- **Browser Automation**: Playwright (main framework)
+- **Containerization**: Docker + Docker Compose
+- **Task Queue**: BullMQ for job orchestration
+- **Database**: PostgreSQL (structured data) + MongoDB (flexible data)
+- **Proxy Management**: Integrated with Playwright contexts
+- **Monitoring**: Grafana + Prometheus + ELK Stack
+- **Optional AI**: OpenAI API, Speech-to-Text for chat analysis
+
+## Project Structure
+```
+project-root/
+├── src/
+│   ├── bots/          # Individual bot implementations
+│   ├── agents/        # Specialized agents (planning, navigation, execution)
+│   ├── proxy/         # Proxy management
+│   ├── accounts/      # Account management
+│   ├── queue/         # Task queue setup
+│   └── utils/         # Helper functions
+├── docker/            # Docker configurations
+├── config/            # Configuration files
+├── logs/              # Log files
+├── data/              # Data storage
+└── monitoring/        # Monitoring setup
+```
+
+## Key Requirements
+1. **Multi-Account Support**: Each bot should run with different accounts
+2. **Proxy Integration**: Each bot context should use different proxies
+3. **Parallel Execution**: Multiple bots running simultaneously
+4. **Error Handling**: Robust error handling and retry mechanisms
+5. **Data Extraction**: Extract chat messages, user data, video metadata
+6. **Stealth Mode**: Avoid detection (user agents, timing, behavior)
+7. **Scalability**: Easy to scale horizontally
+
+## Coding Guidelines
+- Use modern ES6+ syntax
+- Implement proper error handling with try-catch
+- Use async/await for all asynchronous operations
+- Create modular, reusable components
+- Add comprehensive logging
+- Follow security best practices
+- Use environment variables for sensitive data
+
+## Playwright Best Practices
+- Use browser contexts for isolation
+- Implement proper waiting strategies (waitForSelector, waitForLoadState)
+- Handle dynamic content and SPAs
+- Use stealth techniques (user agents, viewport sizes, timing)
+- Implement screenshot/video recording for debugging
+- Handle cookies and session management
+
+## Docker & Deployment
+- Create lightweight Docker images
+- Use multi-stage builds
+- Implement health checks
+- Use Docker Compose for local development
+- Prepare for Kubernetes deployment
+
+## Security & Ethics
+- Respect robots.txt and terms of service
+- Implement rate limiting
+- Use proper proxy rotation
+- Handle sensitive data securely
+- Add user consent mechanisms where required
+
+## When I ask for help:
+1. **Code Generation**: Write complete, production-ready code with error handling
+2. **Architecture**: Suggest scalable, maintainable solutions
+3. **Debugging**: Help identify and fix issues in automation scripts
+4. **Optimization**: Improve performance and reliability
+5. **Best Practices**: Ensure code follows industry standards
+
+## Current Focus
+We're starting with building the core Playwright automation for video chats and chatrooms. Priority is on:
+- Setting up the basic bot structure
+- Implementing multi-account and proxy support
+- Creating a task queue system
+- Building monitoring and logging
+
+## Example Platforms to Target
+- Omegle, Chatroulette (random video chats)
+- Discord, Telegram (group chats)
+- Jitsi, Zoom (video conferences)
+- Custom web-based chat platforms
+- Social media live streams
+
+Remember: Always prioritize reliability, scalability, and ethical usage in your suggestions and code generation. 

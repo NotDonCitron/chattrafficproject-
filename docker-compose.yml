@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Thundr Bot Service
+  thundr-bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: thundr-bot
+    environment:
+      - HEADLESS=true
+      - LOG_LEVEL=info
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CHAT_MODE=video
+      - KEEP_ALIVE=true
+      - INTERESTS=gaming,music,technology
+    volumes:
+      - ./logs:/app/logs
+      - ./screenshots:/app/screenshots
+      - ./data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+  # Redis für BullMQ Task Queue
+  redis:
+    image: redis:7-alpine
+    container_name: thundr-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - bot-network
+    restart: unless-stopped
+
+  # Optional: Redis Commander für Redis Monitoring
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: thundr-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - bot-network
+    profiles:
+      - monitoring
+
+  # Optional: Prometheus für Metriken
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: thundr-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - bot-network
+    profiles:
+      - monitoring
+
+  # Optional: Grafana für Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: thundr-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - bot-network
+    profiles:
+      - monitoring
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data: 
