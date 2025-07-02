@@ -1,20 +1,28 @@
 {
   "name": "thundr-bot",
   "version": "1.0.0",
-  "description": "Automated bot for Thundr.com video chat platform",
+  "description": "Automated bot for Thundr.com video chat platform with AI monitoring",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node src/index.js --dev",
     "test": "node src/test.js",
+    "monitor": "node monitoring/start-monitor.js",
+    "monitor:dev": "node monitoring/start-monitor.js --dev",
+    "dashboard": "python -m http.server 8080 --directory monitoring",
     "docker:build": "docker build -t thundr-bot .",
-    "docker:run": "docker run -it --rm thundr-bot"
+    "docker:run": "docker run -it --rm thundr-bot",
+    "logs": "tail -f logs/monitor.log",
+    "analyze": "node monitoring/analyzer.js"
   },
   "keywords": [
     "playwright",
     "automation",
     "video-chat",
-    "bot"
+    "bot",
+    "ai-monitoring",
+    "anthropic",
+    "claude"
   ],
   "author": "",
   "license": "MIT",
@@ -26,10 +34,15 @@
     "p-queue": "^7.4.1",
     "playwright": "^1.53.2",
     "user-agents": "^1.0.1456",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "node-cron": "^3.0.3",
+    "sharp": "^0.33.1"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
-    "prettier": "^3.1.1"
+    "prettier": "^3.1.1",
+    "nodemon": "^3.0.2"
   }
 }
