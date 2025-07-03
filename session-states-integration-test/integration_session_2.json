@@ -1,0 +1,27 @@
+{
+  "conversationHistory": [
+    {
+      "role": "user",
+      "content": "What do you do?",
+      "timestamp": "2025-07-03T00:01:44.348Z"
+    },
+    {
+      "role": "bot",
+      "content": "I help with various tasks.",
+      "timestamp": "2025-07-03T00:01:44.348Z"
+    }
+  ],
+  "personality": "professional",
+  "platform": "omegle",
+  "qualityScore": 0.9,
+  "sessionId": "integration_session_2",
+  "status": "recovering",
+  "recoveredAt": "2025-07-03T00:01:46.382Z",
+  "recoveryReason": "repeated_failures",
+  "originalStartTime": "2025-07-03T00:01:44.348Z",
+  "restartCount": 1,
+  "lastSaved": "2025-07-03T00:01:46.382Z",
+  "version": 1,
+  "_compressed": true,
+  "data": "{}"
+}

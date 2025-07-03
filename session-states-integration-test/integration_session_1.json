@@ -1,0 +1,27 @@
+{
+  "conversationHistory": [
+    {
+      "role": "user",
+      "content": "Hello!",
+      "timestamp": "2025-07-03T00:01:44.348Z"
+    },
+    {
+      "role": "bot",
+      "content": "Hi there!",
+      "timestamp": "2025-07-03T00:01:44.348Z"
+    }
+  ],
+  "personality": "friendly",
+  "platform": "thundr",
+  "qualityScore": 0.8,
+  "sessionId": "integration_session_1",
+  "status": "recovering",
+  "recoveredAt": "2025-07-03T00:01:44.371Z",
+  "recoveryReason": "connection_failure",
+  "originalStartTime": "2025-07-03T00:01:44.348Z",
+  "restartCount": 1,
+  "lastSaved": "2025-07-03T00:01:44.371Z",
+  "version": 1,
+  "_compressed": true,
+  "data": "{}"
+}

@@ -1,0 +1,14 @@
+{
+  "conversationHistory": [],
+  "platform": "omegle",
+  "sessionId": "concurrent_2",
+  "status": "recovering",
+  "recoveredAt": "2025-07-03T00:02:24.770Z",
+  "recoveryReason": "concurrent_test",
+  "originalStartTime": "2025-07-03T00:02:24.466Z",
+  "restartCount": 1,
+  "lastSaved": "2025-07-03T00:02:24.770Z",
+  "version": 1,
+  "_compressed": true,
+  "data": "{}"
+}

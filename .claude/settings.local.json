@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(git clone:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(./setup.sh:*)",
+      "Bash(export:*)",
+      "Bash(mkdir:*)",
+      "Bash(source:*)",
+      "Bash(claude-code-agent-farm:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(node:*)"
+    ],
+    "deny": []
+  }
+}

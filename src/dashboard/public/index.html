@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatTraffic Enterprise Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy { background: #48bb78; }
+        .status-warning { background: #ed8936; }
+        .status-error { background: #f56565; }
+        .status-offline { background: #a0aec0; }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f7fafc;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .chart-container {
+            height: 200px;
+            background: #f7fafc;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+        }
+        
+        .session-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .session-item {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: #f7fafc;
+        }
+        
+        .session-item.active {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .controls button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .controls button:hover {
+            background: #5a6fd8;
+        }
+        
+        .controls button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+        
+        .log-container {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-entry.error { color: #f56565; }
+        .log-entry.warning { color: #ed8936; }
+        .log-entry.info { color: #4299e1; }
+        .log-entry.success { color: #48bb78; }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">
+        <span class="status-indicator status-offline"></span>
+        Connecting...
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>ChatTraffic Enterprise Dashboard</h1>
+            <p>Real-time monitoring and analytics for AI-powered chatbot operations</p>
+            <div id="systemStatus">
+                <span class="status-indicator status-offline"></span>
+                System Status: Initializing...
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="connectWebSocket()">Connect</button>
+            <button onclick="disconnectWebSocket()">Disconnect</button>
+            <button onclick="subscribeToAll()">Subscribe All</button>
+            <button onclick="clearLogs()">Clear Logs</button>
+            <button onclick="exportData()">Export Data</button>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>System Metrics</h3>
+                <div id="systemMetrics">
+                    <div class="metric">
+                        <span>CPU Usage</span>
+                        <span class="metric-value" id="cpuUsage">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Memory Usage</span>
+                        <span class="metric-value" id="memoryUsage">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Active Connections</span>
+                        <span class="metric-value" id="activeConnections">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Uptime</span>
+                        <span class="metric-value" id="uptime">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Session Statistics</h3>
+                <div id="sessionStats">
+                    <div class="metric">
+                        <span>Total Sessions</span>
+                        <span class="metric-value" id="totalSessions">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Active Sessions</span>
+                        <span class="metric-value" id="activeSessions">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Success Rate</span>
+                        <span class="metric-value" id="successRate">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Duration</span>
+                        <span class="metric-value" id="avgDuration">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Proxy Health</h3>
+                <div id="proxyHealth">
+                    <div class="metric">
+                        <span>Total Proxies</span>
+                        <span class="metric-value" id="totalProxies">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Healthy Proxies</span>
+                        <span class="metric-value" id="healthyProxies">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Health Score</span>
+                        <span class="metric-value" id="avgHealthScore">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Response Time</span>
+                        <span class="metric-value" id="avgResponseTime">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Conversation Quality</h3>
+                <div id="conversationQuality">
+                    <div class="metric">
+                        <span>Active Conversations</span>
+                        <span class="metric-value" id="activeConversations">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Quality Score</span>
+                        <span class="metric-value" id="avgQuality">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Engagement</span>
+                        <span class="metric-value" id="avgEngagement">--</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Messages</span>
+                        <span class="metric-value" id="avgMessages">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Performance Chart</h3>
+                <div class="chart-container">
+                    Real-time performance chart will be displayed here
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Active Sessions</h3>
+                <div class="session-list" id="sessionList">
+                    <div class="session-item">
+                        No active sessions
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Real-time Logs</h3>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry info">[INFO] Dashboard initialized</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        // Configuration
+        const config = {
+            wsUrl: 'ws://localhost:8080',
+            apiUrl: 'http://localhost:3001/api'
+        };
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Dashboard loaded', 'info');
+            connectWebSocket();
+        });
+        
+        // WebSocket connection management
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('WebSocket already connected', 'warning');
+                return;
+            }
+            
+            try {
+                ws = new WebSocket(config.wsUrl);
+                
+                ws.onopen = function() {
+                    log('WebSocket connected successfully', 'success');
+                    updateConnectionStatus('connected');
+                    reconnectAttempts = 0;
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleWebSocketMessage(data);
+                    } catch (error) {
+                        log('Failed to parse WebSocket message: ' + error.message, 'error');
+                    }
+                };
+                
+                ws.onclose = function(event) {
+                    log(`WebSocket closed: ${event.code} - ${event.reason}`, 'warning');
+                    updateConnectionStatus('disconnected');
+                    
+                    // Auto-reconnect
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'info');
+                        setTimeout(connectWebSocket, 5000);
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    log('WebSocket error: ' + error.message, 'error');
+                    updateConnectionStatus('error');
+                };
+                
+            } catch (error) {
+                log('Failed to connect WebSocket: ' + error.message, 'error');
+                updateConnectionStatus('error');
+            }
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('WebSocket disconnected', 'info');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                    log('Welcome message received', 'success');
+                    log(`Client ID: ${data.clientId}`, 'info');
+                    break;
+                    
+                case 'stream_data':
+                    handleStreamData(data.stream, data.data);
+                    break;
+                    
+                case 'initial_metrics':
+                    updateMetricsDisplay(data.data);
+                    break;
+                    
+                case 'metrics_response':
+                    updateMetricsDisplay(data.data);
+                    break;
+                    
+                case 'sessions_response':
+                    updateSessionsDisplay(data.data);
+                    break;
+                    
+                case 'error':
+                    log('Server error: ' + data.message, 'error');
+                    break;
+                    
+                default:
+                    log(`Unknown message type: ${data.type}`, 'warning');
+            }
+        }
+        
+        // Handle stream data
+        function handleStreamData(streamType, data) {
+            switch (streamType) {
+                case 'metrics':
+                    updateMetricsDisplay(data);
+                    break;
+                    
+                case 'sessions':
+                    updateSessionsDisplay(data);
+                    break;
+                    
+                case 'proxy_health':
+                    updateProxyHealthDisplay(data);
+                    break;
+                    
+                case 'conversations':
+                    updateConversationsDisplay(data);
+                    break;
+                    
+                case 'server_stats':
+                    updateServerStatsDisplay(data);
+                    break;
+                    
+                default:
+                    log(`Unknown stream type: ${streamType}`, 'warning');
+            }
+        }
+        
+        // Update display functions
+        function updateMetricsDisplay(metrics) {
+            if (!metrics) return;
+            
+            // System metrics
+            if (metrics.system) {
+                updateElement('cpuUsage', formatPercentage(metrics.system.cpu?.usage));
+                updateElement('memoryUsage', formatPercentage(metrics.system.memory?.usage));
+            }
+            
+            // Session metrics
+            if (metrics.sessions) {
+                updateElement('totalSessions', metrics.sessions.total || 0);
+                updateElement('activeSessions', metrics.sessions.active || 0);
+                updateElement('successRate', formatPercentage(metrics.sessions.successRate));
+                updateElement('avgDuration', formatDuration(metrics.sessions.averageDuration));
+            }
+            
+            // Proxy metrics
+            if (metrics.proxies) {
+                updateElement('totalProxies', metrics.proxies.total || 0);
+                updateElement('healthyProxies', metrics.proxies.healthy || 0);
+                updateElement('avgHealthScore', formatScore(metrics.proxies.averageHealth));
+                updateElement('avgResponseTime', formatTime(metrics.proxies.averageResponseTime));
+            }
+            
+            // Conversation metrics
+            if (metrics.conversations) {
+                updateElement('activeConversations', metrics.conversations.active || 0);
+                updateElement('avgQuality', formatScore(metrics.conversations.averageQuality));
+                updateElement('avgEngagement', formatScore(metrics.conversations.averageEngagement));
+                updateElement('avgMessages', Math.round(metrics.conversations.averageMessageCount || 0));
+            }
+        }
+        
+        function updateSessionsDisplay(sessions) {
+            const container = document.getElementById('sessionList');
+            
+            if (!sessions || sessions.length === 0) {
+                container.innerHTML = '<div class="session-item">No active sessions</div>';
+                return;
+            }
+            
+            container.innerHTML = sessions.map(session => `
+                <div class="session-item ${session.status === 'active' ? 'active' : ''}">
+                    <strong>Session ${session.sessionId.substring(0, 8)}...</strong><br>
+                    Platform: ${session.platform || 'Unknown'}<br>
+                    Status: ${session.status || 'Unknown'}<br>
+                    Duration: ${formatDuration(Date.now() - new Date(session.startTime).getTime())}
+                </div>
+            `).join('');
+        }
+        
+        function updateServerStatsDisplay(stats) {
+            if (stats.uptime) {
+                updateElement('uptime', formatDuration(stats.uptime * 1000));
+            }
+            
+            if (stats.connections) {
+                updateElement('activeConnections', stats.connections.activeConnections || 0);
+            }
+        }
+        
+        // Subscription management
+        function subscribeToAll() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('WebSocket not connected', 'error');
+                return;
+            }
+            
+            const streams = ['metrics', 'sessions', 'proxy_health', 'conversations', 'server_stats'];
+            
+            ws.send(JSON.stringify({
+                type: 'subscribe',
+                streams: streams
+            }));
+            
+            log(`Subscribed to streams: ${streams.join(', ')}`, 'success');
+        }
+        
+        // Utility functions
+        function updateElement(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value || '--';
+            }
+        }
+        
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const indicator = statusElement.querySelector('.status-indicator');
+            
+            indicator.className = 'status-indicator';
+            
+            switch (status) {
+                case 'connected':
+                    indicator.classList.add('status-healthy');
+                    statusElement.innerHTML = '<span class="status-indicator status-healthy"></span>Connected';
+                    break;
+                case 'disconnected':
+                    indicator.classList.add('status-warning');
+                    statusElement.innerHTML = '<span class="status-indicator status-warning"></span>Disconnected';
+                    break;
+                case 'error':
+                    indicator.classList.add('status-error');
+                    statusElement.innerHTML = '<span class="status-indicator status-error"></span>Connection Error';
+                    break;
+                default:
+                    indicator.classList.add('status-offline');
+                    statusElement.innerHTML = '<span class="status-indicator status-offline"></span>Connecting...';
+            }
+        }
+        
+        function formatPercentage(value) {
+            if (value === null || value === undefined) return '--';
+            return Math.round(value) + '%';
+        }
+        
+        function formatDuration(ms) {
+            if (!ms) return '--';
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes % 60}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds % 60}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+        
+        function formatTime(ms) {
+            if (!ms) return '--';
+            return Math.round(ms) + 'ms';
+        }
+        
+        function formatScore(score) {
+            if (score === null || score === undefined) return '--';
+            return (score * 100).toFixed(1) + '%';
+        }
+        
+        function log(message, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+            
+            // Keep only last 100 log entries
+            while (container.children.length > 100) {
+                container.removeChild(container.firstChild);
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '';
+            log('Logs cleared', 'info');
+        }
+        
+        function exportData() {
+            // This would make an API call to export data
+            log('Data export feature coming soon...', 'info');
+        }
+    </script>
+</body>
+</html>

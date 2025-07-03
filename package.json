@@ -7,13 +7,22 @@
     "start": "node src/index.js",
     "dev": "node src/index.js --dev",
     "test": "node src/test.js",
+    "lint": "eslint src/ --ext .js",
+    "type-check": "echo 'No TypeScript type checking configured'",
     "monitor": "node monitoring/start-monitor.js",
     "monitor:dev": "node monitoring/start-monitor.js --dev",
-    "dashboard": "python -m http.server 8080 --directory monitoring",
+    "dashboard": "node examples/dashboard-integration-example.js",
     "docker:build": "docker build -t thundr-bot .",
     "docker:run": "docker run -it --rm thundr-bot",
     "logs": "tail -f logs/monitor.log",
-    "analyze": "node monitoring/analyzer.js"
+    "analyze": "node monitoring/analyzer.js",
+    "claude-enhanced": "node examples/claude-enhanced-bot-example.js",
+    "test-claude": "node examples/test-claude-features.js",
+    "dashboard:demo": "DEMO_MODE=true node examples/dashboard-integration-example.js",
+    "recovery": "node examples/session-recovery-example.js",
+    "recovery:demo": "DEMO_MODE=true node examples/session-recovery-example.js",
+    "performance-report": "node -e \"const logger = require('./src/logging/performance-logger'); const l = new logger(); console.log(JSON.stringify(l.analyzePerformance(), null, 2))\"",
+    "healing-stats": "node -e \"const engine = require('./src/self-healing/self-healing-engine'); const e = new engine(); console.log(JSON.stringify(e.getHealingStats(), null, 2))\""
   },
   "keywords": [
     "playwright",
@@ -27,22 +36,25 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.55.1",
     "axios": "^1.6.2",
     "bullmq": "^5.1.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "ioredis": "^5.3.2",
+    "node-cron": "^3.0.3",
     "p-queue": "^7.4.1",
     "playwright": "^1.53.2",
+    "sharp": "^0.33.1",
+    "socket.io": "^4.7.4",
     "user-agents": "^1.0.1456",
     "winston": "^3.11.0",
-    "express": "^4.18.2",
-    "socket.io": "^4.7.4",
-    "node-cron": "^3.0.3",
-    "sharp": "^0.33.1"
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
-    "prettier": "^3.1.1",
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.1"
   }
 }
